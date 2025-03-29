@@ -37,7 +37,7 @@ function SmallScreenMenu({ isOpen, toggleMenu }) {
           isOpen ? "translate-x-0" : "-translate-x-full"
         } transition-transform duration-300`}
       >
-        <ul className="menu p-4 space-y-4">
+        <ul className="menu p-4 space-y-4 pb-20">
           {iconList.map((icon) => (
             <li key={icon.name}>
               <a className="flex flex-col items-center" href={icon.link}>
@@ -66,7 +66,7 @@ function SmallScreenMenu({ isOpen, toggleMenu }) {
 function LargeScreenMenu() {
   return (
     <div className="h-screen bg-secondaryBg overflow-y-auto fixed">
-      <ul className="menu">
+      <ul className="menu pb-20">
         {iconList.map((icon) => (
           <li key={icon.name}>
             <a className="flex flex-col items-center" href={icon.link}>
