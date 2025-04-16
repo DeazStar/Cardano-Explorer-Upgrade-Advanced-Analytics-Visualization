@@ -29,7 +29,6 @@ function App() {
       <Route path="/pools/:id" element={<PoolDetail />} />
       <Route path="/analysis" element={<Analysis />} />
       <Route path="/analysis-transactions" element={<TransactionAnalysis />} />
-      <Route path="/analysis-pools" element={<PoolGraphByEpoch />} />"
     </Routes>
   </BrowserRouter>
   )
