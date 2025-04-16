@@ -1,5 +1,4 @@
-import React, { useEffect, useState, useRef } from 'react';
-import axios from 'axios';
+import React, { useEffect, useRef } from 'react';
 import * as d3 from 'd3';
 import {
   LineChart,
@@ -12,76 +11,67 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 
-const PoolGraphByEpoch = () => {
-  const [lineChartData, setLineChartData] = useState([]);
-  const [heatmapData, setHeatmapData] = useState([]);
+const PoolGraphByEpoch = ({ poolData }) => {
+  const [lineChartData, setLineChartData] = React.useState([]);
+  const [heatmapData, setHeatmapData] = React.useState([]);
   const d3Container = useRef(null);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await axios.get('http://localhost:5000/rest/v1/pools.json?rows=true&limit=1000');
-        const rows = response.data.rows;
+    if (poolData.length > 0) {
+      // Aggregate data for line chart
+      const epochData = poolData.reduce((acc, pool) => {
+        const epoch = pool.block_epoch;
+        if (!epoch) return acc;
 
-        // Aggregate data for line chart
-        const epochData = rows.reduce((acc, pool) => {
-          const epoch = pool.block_epoch;
-          if (!epoch) return acc;
+        if (!acc[epoch]) {
+          acc[epoch] = { epoch: epoch, totalPools: 0, producerPools: 0 };
+        }
 
-          if (!acc[epoch]) {
-            acc[epoch] = { epoch: epoch, totalPools: 0, producerPools: 0 };
-          }
+        acc[epoch].totalPools += 1;
+        if (pool.block > 0) {
+          acc[epoch].producerPools += 1;
+        }
 
-          acc[epoch].totalPools += 1;
-          if (pool.block > 0) {
-            acc[epoch].producerPools += 1;
-          }
+        return acc;
+      }, {});
 
-          return acc;
-        }, {});
+      const chartData = Object.keys(epochData)
+        .sort((a, b) => Number(a) - Number(b))
+        .map(epoch => ({
+          epoch: `${epoch}`,
+          totalPools: epochData[epoch].totalPools,
+          producerPools: epochData[epoch].producerPools,
+          ratio: (epochData[epoch].producerPools / epochData[epoch].totalPools) || 0,
+        }));
 
-        const chartData = Object.keys(epochData)
-          .sort((a, b) => Number(a) - Number(b))
-          .map(epoch => ({
-            epoch: `${epoch}`,
-            totalPools: epochData[epoch].totalPools,
-            producerPools: epochData[epoch].producerPools,
-            ratio: (epochData[epoch].producerPools / epochData[epoch].totalPools) || 0,
-          }));
+      setLineChartData(chartData);
 
-        setLineChartData(chartData);
+      // Process heatmap data
+      const epochDataForHeatmap = poolData.reduce((acc, pool) => {
+        const epoch = pool.block_epoch;
+        if (!epoch || !pool.active_stake || !pool.live_stake) return acc;
 
-        // Process heatmap data
-        const epochDataForHeatmap = rows.reduce((acc, pool) => {
-          const epoch = pool.block_epoch;
-          if (!epoch || !pool.active_stake || !pool.live_stake) return acc;
+        if (!acc[epoch]) {
+          acc[epoch] = { epoch: epoch, activeStake: 0, liveStake: 0 };
+        }
 
-          if (!acc[epoch]) {
-            acc[epoch] = { epoch: epoch, activeStake: 0, liveStake: 0 };
-          }
+        acc[epoch].activeStake += Number(pool.active_stake);
+        acc[epoch].liveStake += Number(pool.live_stake);
 
-          acc[epoch].activeStake += Number(pool.active_stake);
-          acc[epoch].liveStake += Number(pool.live_stake);
+        return acc;
+      }, {});
 
-          return acc;
-        }, {});
+      const heatmapData = Object.keys(epochDataForHeatmap)
+        .sort((a, b) => Number(a) - Number(b))
+        .map(epoch => ({
+          epoch: `${epoch}`,
+          activeStake: epochDataForHeatmap[epoch].activeStake,
+          liveStake: epochDataForHeatmap[epoch].liveStake,
+        }));
 
-        const heatmapData = Object.keys(epochDataForHeatmap)
-          .sort((a, b) => Number(a) - Number(b))
-          .map(epoch => ({
-            epoch: `${epoch}`,
-            activeStake: epochDataForHeatmap[epoch].activeStake,
-            liveStake: epochDataForHeatmap[epoch].liveStake,
-          }));
-
-        setHeatmapData(heatmapData);
-      } catch (error) {
-        console.error('Error fetching data:', error);
-      }
-    };
-
-    fetchData();
-  }, []);
+      setHeatmapData(heatmapData);
+    }
+  }, [poolData]);
 
   useEffect(() => {
     if (heatmapData.length > 0 && d3Container.current) {
@@ -91,7 +81,7 @@ const PoolGraphByEpoch = () => {
       const margin = { top: 50, right: 30, bottom: 50, left: 60 };
       const containerWidth = d3Container.current.clientWidth;
       const width = containerWidth - margin.left - margin.right;
-      const height = containerWidth / 2; // Maintain a 2:1 aspect ratio
+      const height = containerWidth / 2;
 
       const epochs = heatmapData.map(d => d.epoch);
       const categories = ['Active Stake', 'Live Stake'];
@@ -151,7 +141,7 @@ const PoolGraphByEpoch = () => {
         if (d3Container.current) {
           const { width } = entry.contentRect;
           d3Container.current.setAttribute('width', width);
-          d3Container.current.setAttribute('height', width / 2); // Maintain 2:1 aspect ratio
+          d3Container.current.setAttribute('height', width / 2);
         }
       }
     });
@@ -189,9 +179,7 @@ const PoolGraphByEpoch = () => {
           </h3>
           <svg ref={d3Container} style={{ backgroundColor: '#3E4758', border: '1px solid #ccc', width: '100%' }} />
         </>
-      ) : (
-        <p>Loading data...</p>
-      )}
+      ) : null}
     </div>
   );
 };
