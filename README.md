@@ -131,6 +131,7 @@ PORT=<the port number you want to use>
    ```
 
 ---
-
+## Important links:
+* Documentation and gudline: https://docs.google.com/document/d/1BemfwvDyXIcgH_H2TouPghTSJpm6F4FBc9umC38rJT0/edit?usp=sharing
 
 
